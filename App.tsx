@@ -14,12 +14,29 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [progressMessage, setProgressMessage] = useState<string | null>(null);
 
-  const handleFileChange = (selectedFiles: File[] | null) => {
-    setFiles(selectedFiles);
+  const handleFilesAdded = (newFiles: File[]) => {
+    setFiles(prevFiles => {
+      const allFiles = [...(prevFiles || []), ...newFiles];
+      // Simple deduplication based on name, size, and last modified
+      const uniqueFiles = allFiles.filter((file, index, self) =>
+        index === self.findIndex((f) => (
+          f.name === file.name && f.size === file.size && f.lastModified === file.lastModified
+        ))
+      );
+      return uniqueFiles;
+    });
     setExtractedData(null);
     setError(null);
     setProgressMessage(null);
   };
+
+  const handleClearFiles = () => {
+    setFiles(null);
+    setExtractedData(null);
+    setError(null);
+    setProgressMessage(null);
+  };
+
 
   const processFiles = useCallback(async () => {
     if (!files || files.length === 0) {
@@ -96,7 +113,11 @@ const App: React.FC = () => {
 
         <main className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 border border-gray-200 dark:border-gray-700">
           <div className="space-y-6">
-            <FileUpload onFileChange={handleFileChange} />
+            <FileUpload 
+              onFilesAdded={handleFilesAdded} 
+              onClear={handleClearFiles} 
+              files={files}
+            />
             
             <div className="flex justify-center">
               <button
