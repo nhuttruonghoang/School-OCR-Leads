@@ -1,0 +1,5 @@
+{
+  "name": "HSU Leads OCR Tool",
+  "description": "An OCR tool to extract student lead information from images and PDFs using Gemini. The app helps digitalize school data into a clean CSV format.",
+  "requestFramePermissions": []
+}
