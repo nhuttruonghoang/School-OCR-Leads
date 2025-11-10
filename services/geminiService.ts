@@ -1,4 +1,3 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import type { StudentData } from '../types';
 
@@ -59,14 +58,34 @@ Process all images provided to compile a complete list.
     });
 
     const jsonText = response.text.trim();
+    // A secondary check in case the response is not valid JSON despite the MIME type request
+    if (!jsonText.startsWith('[') || !jsonText.endsWith(']')) {
+        throw new Error("Received non-JSON response from model.");
+    }
+
     const parsedData: StudentData[] = JSON.parse(jsonText);
     return parsedData;
 
   } catch (error) {
     console.error("Error calling Gemini API:", error);
-    if (error.message.includes('JSON')) {
-        throw new Error("The AI model returned an invalid format. Please check the document or try again.");
+    let errorMessage = "An unknown error occurred while communicating with the AI model.";
+
+    if (error instanceof Error) {
+      const msg = error.message.toLowerCase();
+
+      if (msg.includes('api key not valid')) {
+        errorMessage = "Your API Key is invalid. Please check your configuration.";
+      } else if (msg.includes('429') || msg.includes('rate limit')) {
+        errorMessage = "You've made too many requests in a short period. Please wait a moment and try again.";
+      } else if (msg.includes('safety') || msg.includes('blocked')) {
+        errorMessage = "The request was blocked for safety reasons. This can happen if the content is inappropriate or the model could not provide a responsible answer. Please try a different file.";
+      } else if (msg.includes('json') || msg.includes('unexpected token')) {
+        errorMessage = "The AI model returned data in an unexpected format. This could be due to a complex or unreadable document. Please try again.";
+      } else {
+        errorMessage = "Failed to extract data. The AI model could not process the request. Please check your network connection or try again later.";
+      }
     }
-    throw new Error("Failed to extract data. The AI model could not process the request.");
+    
+    throw new Error(errorMessage);
   }
 };
